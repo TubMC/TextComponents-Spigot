@@ -24,3 +24,11 @@ The following methods do not work within this implementation:
 This is due to the limitations of the underlying [SelectorComponent](https://github.com/SpigotMC/BungeeCord/blob/master/chat/src/main/java/net/md_5/bungee/api/chat/SelectorComponent.java) and cannot be resolved
 
 > I have requested a fix of this in [this feature request](https://github.com/SpigotMC/BungeeCord/issues/3512)
+
+### ITranslatableComponent (kinda)
+
+The following methods *may* not work:
+
+`#getTranslationFallback()`, `#setTranslationFallback()`
+
+While the underlying api now [supports this feature](https://github.com/SpigotMC/BungeeCord/blob/master/chat/src/main/java/net/md_5/bungee/api/chat/TranslatableComponent.java#L36) spigot's version of it doesn't seem to have caught up yet. As a result an attempt to modify the field is performed upon calling these methods (for when it's updated) but if that fails an error message is displayed **once**.
