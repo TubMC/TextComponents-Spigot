@@ -18,7 +18,7 @@ final class TranslatableSpigotComponent extends AbstractBaseSpigotComponent<Tran
 	@Internal
 	TranslatableSpigotComponent(@NotNull final TranslatableComponent internal) {
 		super(internal);
-		if (FALLBACK_FIELD == null) {
+		if (FALLBACK_FIELD == null && !LOOKED_UP_FIELD) {
 			LOOKED_UP_FIELD = true;
 			try {
 				FALLBACK_FIELD = TranslatableComponent.class.getField("fallback");
