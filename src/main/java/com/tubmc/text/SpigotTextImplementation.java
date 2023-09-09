@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import fun.bb1.objects.defineables.ITypedProxy;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.KeybindComponent;
 import net.md_5.bungee.api.chat.ScoreComponent;
@@ -20,13 +21,42 @@ final class SpigotTextImplementation extends AbstractImplementation {
 	@Contract("null -> null")
 	@Internal
 	static @Nullable final IComponent wrapComponent(@Nullable final BaseComponent toWrap) {
-		return null;
+		if (toWrap == null) return null;
+		if (toWrap instanceof KeybindComponent component) return new KeybindSpigotComponent(component);
+		if (toWrap instanceof TextComponent component) return new LiteralSpigotComponent(component);
+		if (toWrap instanceof ScoreComponent component) return new ScoreboardSpigotComponent(component);
+		if (toWrap instanceof SelectorComponent component) return new SelectedSpigotComponent(component);
+		if (toWrap instanceof TranslatableComponent component) return new TranslatableSpigotComponent(component);
+		throw new IllegalArgumentException("Unexpected wrap type: " + toWrap.getClass().getName());
 	}
 	
 	@Contract("null -> null")
 	@Internal
 	static @Nullable final BaseComponent unwrapComponent(@Nullable final IComponent toUnwrap) {
-		return null;
+		if (toUnwrap == null) return null;
+		// All AbstractBaseSpigotComponent's descend from ITypedProxy where the proxied object is a BaseComponent
+		// So rather than building a new object we can grab it's proxied BaseComponent
+		if (toUnwrap instanceof ITypedProxy proxy && proxy.getProxiedObject() instanceof BaseComponent baseComponent) return baseComponent;
+		// Handle custom component implementations as they need a new BaseComponent built for them
+		final BaseComponent baseComponent = (toUnwrap instanceof IKeybindComponent keybindComponent) ? new KeybindComponent(keybindComponent.getKeybind())
+				: (toUnwrap instanceof ILiteralComponent literalComponent) ? new TextComponent(literalComponent.getMessage())
+				: (toUnwrap instanceof IScoreboardComponent scoreboardComponent) ? new ScoreComponent(scoreboardComponent.getSelector(), scoreboardComponent.getObjective(), scoreboardComponent.getValue() == null ? "" : scoreboardComponent.getValue())
+				: (toUnwrap instanceof ISelectedComponent selectorComponent) ? new SelectorComponent(selectorComponent.getSelector())
+				: (toUnwrap instanceof ITranslatableComponent translatableComponent) ? new TranslatableComponent(translatableComponent.getTranslationKey())
+				: null;
+		if (baseComponent == null) throw new IllegalArgumentException("Provided IComponent is not valid! " + toUnwrap.getClass().getName());
+		if (toUnwrap.getChildren() != null && toUnwrap.getChildren().size() != 0) {
+			baseComponent.setExtra(toUnwrap.getChildren().stream().map(SpigotTextImplementation::unwrapComponent).toList());
+		}
+		// Extra logic for TranslatableComponent as fallbacks are a newer feature and may not be supported
+		if (baseComponent instanceof TranslatableComponent translatableComponent) {
+			final ITranslatableComponent copyFrom = (ITranslatableComponent) toUnwrap;
+			// doing some magic because i am lazy!
+			final TranslatableSpigotComponent wrapper = new TranslatableSpigotComponent(translatableComponent);
+			wrapper.setTranslationFallback(copyFrom.getTranslationFallback());
+			if (copyFrom.getInsertions() != null) wrapper.setInsertions(copyFrom.getInsertions());
+		}
+		return baseComponent;
 	}
 	/**
 	 * {@inheritDoc}
