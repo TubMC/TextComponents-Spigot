@@ -40,8 +40,4 @@ sealed interface ImplementationSpecificComponentMethods permits IComponent {
 		return SpigotTextImplementation.unwrapComponent((IComponent)this);
 	}
 	
-	public static @NotNull IComponent fromSpigot(@NotNull final BaseComponent baseComponent) {
-		return SpigotTextImplementation.wrapComponent(baseComponent);
-	}
-	
 }
